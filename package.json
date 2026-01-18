@@ -1,0 +1,30 @@
+{
+  "name": "react-ts-fullstack",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Full-stack React (Cloudflare Pages) + Hono (Cloudflare Workers)",
+  "scripts": {
+    "dev": "concurrently \"bun run dev:web\" \"bun run dev:server\"",
+    "dev:web": "cd apps/web && bun dev",
+    "dev:server": "cd server && bun dev",
+    "build": "bun run build:web && bun run build:server",
+    "build:web": "cd apps/web && bun run build",
+    "build:server": "cd server && bun run build",
+    "deploy": "bun run deploy:web && bun run deploy:server",
+    "deploy:web": "cd apps/web && wrangler pages deploy dist",
+    "deploy:server": "cd server && bun run deploy",
+    "db:setup": "cd server && bun run db:setup",
+    "db:push": "cd server && bun run db:push",
+    "db:seed": "cd server && bun run db:seed",
+    "check-types": "bun run check-types:web && bun run check-types:server",
+    "check-types:web": "cd apps/web && bun run check-types",
+    "check-types:server": "cd server && bun run check-types",
+    "lint": "bun run lint:web && bun run lint:server",
+    "lint:web": "cd apps/web && bun run lint",
+    "lint:server": "cd server && bun run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "wrangler": "^4.14.0"
+  }
+}
