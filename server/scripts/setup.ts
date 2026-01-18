@@ -21,37 +21,6 @@ import { randomBytes } from "crypto";
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from "fs";
 import { resolve } from "path";
 
-// Database backup path (must match runner's db-backup.ts)
-const DB_BACKUP_PATH = "/tmp/lumea-db-backup.sql";
-
-/**
- * Check if a database backup exists
- */
-function hasBackup(): boolean {
-  return existsSync(DB_BACKUP_PATH);
-}
-
-/**
- * Restore database from backup file using psql
- * Returns true if restore succeeded
- */
-async function restoreDatabase(): Promise<boolean> {
-  if (!hasBackup()) {
-    return false;
-  }
-
-  try {
-    execSync(`psql -h localhost -p 5432 -U lumea -d lumea -f ${DB_BACKUP_PATH}`, {
-      stdio: "inherit",
-      timeout: 120000, // 2 minutes
-    });
-    return true;
-  } catch (error) {
-    console.error("Restore failed:", error);
-    return false;
-  }
-}
-
 // Wrangler uses .dev.vars for local secrets (not .env)
 const ENV_FILE = resolve(import.meta.dirname, "../.dev.vars");
 const ENV_EXAMPLE_FILE = resolve(import.meta.dirname, "../.dev.vars.example");
@@ -212,25 +181,7 @@ async function setup() {
     process.exit(1);
   }
 
-  // 4. Restore database if backup exists (SHO-176)
-  // This restores user data after sandbox reprovisioning
-  if (hasBackup()) {
-    console.log("\n🔄 Restoring database from backup...");
-    try {
-      const restored = await restoreDatabase();
-      if (restored) {
-        console.log("✅ Database restored from backup!");
-        console.log("\n🎉 Database setup complete!");
-        return; // Skip seed - data already restored
-      }
-      console.log("⚠️ Restore failed, will run seed instead");
-    } catch (error) {
-      console.error("⚠️ Restore error:", error);
-      console.log("   Falling back to seed...");
-    }
-  }
-
-  // 5. Run seed (only if no backup restored)
+  // 4. Run seed
   console.log("\n🌱 Running seed...");
   try {
     execSync("bun run db:seed", { stdio: "inherit" });
