@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Full-stack React (Cloudflare Pages) + Hono (Cloudflare Workers)",
+  "workspaces": ["apps/*", "server"],
   "scripts": {
     "dev": "concurrently \"bun run dev:web\" \"bun run dev:server\"",
     "dev:web": "cd apps/web && bun dev",
