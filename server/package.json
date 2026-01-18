@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx wrangler dev",
+    "dev": "bun run dev:node",
+    "dev:node": "DATABASE_URL=\"postgresql://lumea@localhost:5432/lumea\" PORT=3001 NODE_ENV=development CORS_ORIGINS=\"http://localhost:3000,http://localhost:5173\" LOG_LEVEL=info BETTER_AUTH_URL=\"http://localhost:3001\" BETTER_AUTH_SECRET=\"dev-secret-change-in-production\" bun run src/server-node.ts",
+    "dev:wrangler": "npx wrangler dev",
     "build": "npx wrangler deploy --dry-run --outdir dist",
     "deploy": "npx wrangler deploy",
     "check-types": "tsc --noEmit",
@@ -17,6 +19,7 @@
     "db:setup": "bun scripts/setup.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.13.8",
     "@hono/zod-validator": "^0.5.0",
     "better-auth": "^1.4.14",
     "drizzle-orm": "^0.45.1",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241230.0",
+    "@types/node": "^22.14.0",
     "drizzle-kit": "^0.31.8",
     "typescript": "^5.7.0",
     "wrangler": "^4.14.0"

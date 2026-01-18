@@ -49,7 +49,10 @@ bun run dev
 
 # Start individual services
 bun run dev:web      # Frontend on http://localhost:3000
-bun run dev:server   # Backend on http://localhost:3001
+bun run dev:server   # Backend on http://localhost:3001 (Node.js)
+
+# Alternative: Wrangler dev (local Workers runtime - may not work in sandbox)
+cd server && bun run dev:wrangler
 
 # Build for production
 bun run build
@@ -71,7 +74,7 @@ bun run lint
 | Service | Port | URL |
 |---------|------|-----|
 | Frontend (Vite) | 3000 | http://localhost:3000 |
-| Backend (Wrangler) | 3001 | http://localhost:3001 |
+| Backend (Node.js) | 3001 | http://localhost:3001 |
 | PostgreSQL | 5432 | postgresql://lumea@localhost:5432/lumea |
 
 ## Database Setup
@@ -246,20 +249,61 @@ Pre-configured bindings (uncomment in `wrangler.toml` to enable):
 ## Notes
 
 - Frontend uses port 3000 (not default 5173) for Lumea runner compatibility
-- Backend uses Wrangler for local development (simulates Workers runtime)
+- Backend uses Node.js + `@hono/node-server` for local development (identical Hono code)
 - `concurrently` runs both services with `bun run dev`
 - All components from shadcn/ui are pre-installed
 
+## Architecture: Dev vs Production
+
+The same Hono code runs in both environments:
+
+```
+┌─────────────────────────────────────┐
+│     HONO APP (identical code)       │
+│     server/src/app.ts               │
+└─────────────────────────────────────┘
+         ↓                    ↓
+  ┌──────────────┐    ┌──────────────┐
+  │  Dev Local   │    │  Production  │
+  │  Node.js     │    │  Workers     │
+  │  dev:node    │    │  deploy      │
+  │  (sandbox)   │    │  (wrangler)  │
+  └──────────────┘    └──────────────┘
+        ↓                    ↓
+  PostgreSQL            Hyperdrive
+  (direct)              (pooled)
+```
+
 ## Known Limitations
+
+### Wrangler Dev in Sandbox Environments
+
+**Wrangler dev does NOT work in Daytona/Docker sandbox environments.**
+
+The `workerd` runtime (Cloudflare's local Workers simulator) has compatibility issues that cause:
+- 100% CPU usage
+- Infinite loops
+- HTTP request timeouts
+
+**Solution:** Use `bun run dev:node` instead, which runs the same Hono code on Node.js with `@hono/node-server`.
+
+```bash
+# ✅ Works in sandbox
+bun run dev          # Uses dev:node
+bun run dev:node     # Explicit Node.js server
+
+# ❌ Does NOT work in sandbox
+bun run dev:wrangler # Hangs/100% CPU
+```
 
 ### Wrangler + Bun Runtime Incompatibility
 
-**Wrangler does not support the Bun runtime.** All wrangler commands in `server/package.json` use `npx wrangler` to force Node.js execution:
+**Wrangler does not support the Bun runtime.** All wrangler commands use `npx wrangler` to force Node.js execution:
 
 ```json
 {
   "scripts": {
-    "dev": "npx wrangler dev",
+    "dev:wrangler": "npx wrangler dev",
     "build": "npx wrangler deploy --dry-run --outdir dist",
     "deploy": "npx wrangler deploy"
   }
@@ -272,3 +316,17 @@ Wrangler does not support the Bun runtime. Please try this command again using N
 ```
 
 Make sure wrangler commands are prefixed with `npx`.
+
+### Environment Compatibility
+
+The middleware layer supports both Workers bindings (`c.env`) and Node.js (`process.env`):
+
+```typescript
+// Middleware auto-detects environment
+const connectionString =
+  c.env.HYPERDRIVE?.connectionString ||  // Workers + Hyperdrive
+  c.env.DATABASE_URL ||                   // Workers + env var
+  process.env.DATABASE_URL;               // Node.js
+```
+
+This allows the same code to run in both environments without modification.
