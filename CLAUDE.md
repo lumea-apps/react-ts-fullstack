@@ -242,3 +242,26 @@ Pre-configured bindings (uncomment in `wrangler.toml` to enable):
 - Backend uses Wrangler for local development (simulates Workers runtime)
 - `concurrently` runs both services with `bun run dev`
 - All components from shadcn/ui are pre-installed
+
+## Known Limitations
+
+### Wrangler + Bun Runtime Incompatibility
+
+**Wrangler does not support the Bun runtime.** All wrangler commands in `server/package.json` use `npx wrangler` to force Node.js execution:
+
+```json
+{
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "build": "npx wrangler deploy --dry-run --outdir dist",
+    "deploy": "npx wrangler deploy"
+  }
+}
+```
+
+If you see this error:
+```
+Wrangler does not support the Bun runtime. Please try this command again using Node.js
+```
+
+Make sure wrangler commands are prefixed with `npx`.
