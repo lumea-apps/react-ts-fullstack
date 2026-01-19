@@ -12,9 +12,9 @@ export default defineConfig({
     },
   },
   server: {
-    // Use port 3000 to match Lumea runner expectations (same as Next.js)
-    port: 3000,
-    strictPort: true,
+    // Default Vite port for local development
+    port: 5173,
+    strictPort: false,
     // HMR configuration for Daytona proxy compatibility
     hmr: {
       // Use the same port for HMR websocket (works through Daytona proxy)
@@ -25,6 +25,6 @@ export default defineConfig({
     host: true,
   },
   preview: {
-    port: 3000,
+    port: 5173,
   },
 })

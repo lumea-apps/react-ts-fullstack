@@ -171,20 +171,33 @@ async function setup() {
   // 2. Wait for database (step 1 was env provisioning above)
   await waitForDatabase();
 
-  // 3. Run migrations
-  console.log("\n📦 Running migrations...");
+  // Pass environment to child processes (drizzle-kit needs DATABASE_URL)
+  const childEnv = { ...process.env };
+
+  // 3. Generate Better Auth schema
+  console.log("\n🔐 Generating Better Auth schema...");
   try {
-    execSync("bun run db:push", { stdio: "inherit" });
-    console.log("✅ Migrations applied!");
+    execSync("bun run db:auth:generate", { stdio: "inherit", env: childEnv });
+    console.log("✅ Auth schema generated!");
   } catch (error) {
-    console.error("❌ Migration failed:", error);
+    console.error("❌ Better Auth schema generation failed:", error);
     process.exit(1);
   }
 
-  // 4. Run seed
+  // 4. Run Drizzle push (creates all tables: auth + app)
+  console.log("\n📦 Creating database tables...");
+  try {
+    execSync("bun run db:push", { stdio: "inherit", env: childEnv });
+    console.log("✅ Database tables created!");
+  } catch (error) {
+    console.error("❌ Database setup failed:", error);
+    process.exit(1);
+  }
+
+  // 5. Run seed
   console.log("\n🌱 Running seed...");
   try {
-    execSync("bun run db:seed", { stdio: "inherit" });
+    execSync("bun run db:seed", { stdio: "inherit", env: childEnv });
   } catch (error) {
     console.error("❌ Seed failed:", error);
     process.exit(1);

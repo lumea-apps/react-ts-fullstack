@@ -23,7 +23,7 @@ react-ts-fullstack/
 │       │   ├── components/ui/  # shadcn/ui components
 │       │   ├── lib/            # Utilities (api.ts, utils.ts)
 │       │   └── App.tsx         # Main app component
-│       └── vite.config.ts      # Vite config (port 3000)
+│       └── vite.config.ts      # Vite config (port 5173)
 ├── server/                  # Hono backend (Cloudflare Workers)
 │   ├── src/
 │   │   ├── db/             # Drizzle ORM schema
@@ -48,7 +48,7 @@ bun install
 bun run dev
 
 # Start individual services
-bun run dev:web      # Frontend on http://localhost:3000
+bun run dev:web      # Frontend on http://localhost:5173
 bun run dev:server   # Backend on http://localhost:3001 (Node.js)
 
 # Alternative: Wrangler dev (local Workers runtime - may not work in sandbox)
@@ -58,9 +58,13 @@ cd server && bun run dev:wrangler
 bun run build
 
 # Database commands
-bun run db:setup     # Provision .env + migrate + seed
-bun run db:push      # Push schema changes
-bun run db:seed      # Run seed script
+bun run db:setup         # Full setup: provision .env + generate auth schema + create tables + seed
+bun run db:auth:generate # Regenerate Better Auth schema (auth-schema.ts)
+bun run db:push          # Push schema changes to database (Drizzle)
+bun run db:seed          # Run seed script
+
+# Testing
+bun run test:auth    # Run authentication flow tests (requires running server)
 
 # Type checking
 bun run check-types
@@ -73,13 +77,17 @@ bun run lint
 
 | Service | Port | URL |
 |---------|------|-----|
-| Frontend (Vite) | 3000 | http://localhost:3000 |
+| Frontend (Vite) | 5173 | http://localhost:5173 |
 | Backend (Node.js) | 3001 | http://localhost:3001 |
 | PostgreSQL | 5432 | postgresql://lumea@localhost:5432/lumea |
 
 ## Database Setup
 
 The template uses PostgreSQL locally and Cloudflare Hyperdrive in production.
+
+**Architecture:** Database tables are managed by two systems:
+- **Better Auth CLI** - Manages auth tables (user, session, account, verification)
+- **Drizzle ORM** - Manages app-specific tables (items, etc.)
 
 ### First-time setup (ephemeral sandboxes)
 
@@ -91,8 +99,18 @@ This command:
 1. Creates `server/.dev.vars` from `.dev.vars.example` if missing
 2. Auto-generates `BETTER_AUTH_SECRET` if not set
 3. Waits for PostgreSQL to be ready
-4. Runs `drizzle-kit push` to apply schema
-5. Runs seed script
+4. Generates Better Auth schema (`src/db/auth-schema.ts`) via Better Auth CLI
+5. Runs `drizzle-kit push` to create all tables (auth + app)
+6. Runs seed script
+
+### Regenerate auth schema
+
+If you add Better Auth plugins or change auth configuration:
+
+```bash
+bun run db:auth:generate  # Regenerates auth-schema.ts
+bun run db:push           # Applies changes to database
+```
 
 ### Environment Variables
 
@@ -127,11 +145,29 @@ In Daytona sandboxes, the API URL is auto-detected from the hostname.
 
 ## Authentication
 
-Better Auth is configured with email/password authentication.
+Better Auth is configured with email/password authentication, following the official Better Auth + Hono integration pattern.
+
+### Architecture
+
+Session handling follows the Better Auth official documentation:
+
+1. **Global Session Middleware** (`middleware/session.ts`)
+   - Runs on every request after auth middleware
+   - Fetches session once via `auth.api.getSession()`
+   - Stores `user` and `session` in Hono context
+
+2. **Auth Routes** (`routes/auth.ts`)
+   - Handles all `/api/auth/*` routes
+   - Only POST and GET methods (as per Better Auth docs)
+   - Delegates to Better Auth handler
+
+3. **Protected Route Middleware** (`middleware/auth.ts`)
+   - Uses cached session from context (no duplicate API calls)
+   - Helper functions: `getCurrentUser()`, `getSession()`
 
 ### Routes
-- `POST /api/auth/sign-up` - Register
-- `POST /api/auth/sign-in` - Login
+- `POST /api/auth/sign-up/email` - Register with email/password
+- `POST /api/auth/sign-in/email` - Login with email/password
 - `POST /api/auth/sign-out` - Logout
 - `GET /api/auth/session` - Get current session
 
@@ -140,13 +176,64 @@ Better Auth is configured with email/password authentication.
 Use the `requireAuth` middleware:
 
 ```typescript
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, getCurrentUser } from "../middleware/auth";
 
 app.get("/api/protected", requireAuth, async (c) => {
-  const session = c.get("session");
-  return c.json({ user: session.user });
+  // User is guaranteed to exist after requireAuth
+  const user = getCurrentUser(c);
+  return c.json({ userId: user!.id, email: user!.email });
 });
 ```
+
+### Accessing Session Data
+
+Session data is available in any route via context:
+
+```typescript
+// In any route handler
+app.get("/api/profile", async (c) => {
+  const user = c.get("user");     // SessionUser | null
+  const session = c.get("session"); // Session | null
+
+  if (!user) {
+    return c.json({ authenticated: false });
+  }
+
+  return c.json({
+    authenticated: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
+  });
+});
+```
+
+### Testing Authentication
+
+Run the automated authentication flow test:
+
+```bash
+# Make sure the server is running first
+bun run dev:node
+
+# In another terminal, run the tests
+bun run test:auth
+```
+
+The test script (`scripts/test-auth.ts`) verifies:
+1. Health check endpoint
+2. User sign up with email/password
+3. User sign in
+4. Session retrieval (authenticated)
+5. Sign out
+6. Session cleared after sign out
+7. Re-authentication after sign out
+8. Invalid credentials rejection
+9. Duplicate signup rejection
+
+The script automatically cleans up test data from the database after running.
 
 ## Adding New API Routes
 
@@ -248,7 +335,7 @@ Pre-configured bindings (uncomment in `wrangler.toml` to enable):
 
 ## Notes
 
-- Frontend uses port 3000 (not default 5173) for Lumea runner compatibility
+- Frontend uses default Vite port 5173 for local development
 - Backend uses Node.js + `@hono/node-server` for local development (identical Hono code)
 - `concurrently` runs both services with `bun run dev`
 - All components from shadcn/ui are pre-installed

@@ -6,6 +6,7 @@ import { timing } from "hono/timing";
 
 import { loggerMiddleware } from "./middleware/logger";
 import { dbMiddleware } from "./middleware/db";
+import { sessionMiddleware } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 
@@ -41,6 +42,12 @@ app.use("*", async (c, next) => {
 
 // Database & Auth middleware (after CORS, before routes)
 app.use("*", dbMiddleware);
+
+// Session middleware - fetches session once and stores in context
+// Access via c.get("user") and c.get("session") in any route
+// IMPORTANT: Skip for /api/auth/* routes - Better Auth manages sessions internally
+app.use("/api/items/*", sessionMiddleware);
+app.use("/api/upload/*", sessionMiddleware);
 
 // Routes
 app.route("/health", healthRoutes);
