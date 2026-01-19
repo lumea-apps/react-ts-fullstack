@@ -14,3 +14,6 @@ export const items = pgTable("items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Re-export storage schema
+export * from "./storage-schema";

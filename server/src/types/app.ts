@@ -1,6 +1,7 @@
 import type { Env } from "hono";
 import type { Database } from "../db";
 import type { Auth } from "../lib/auth";
+import type { StorageService } from "../lib/storage";
 
 export interface Bindings {
   // Environment
@@ -16,8 +17,9 @@ export interface Bindings {
   HYPERDRIVE?: Hyperdrive;
   DATABASE_URL?: string;
 
-  // Storage (uncomment when needed)
-  // STORAGE: R2Bucket;
+  // Storage - R2 (production) or local filesystem (dev)
+  STORAGE?: R2Bucket;
+  R2_PUBLIC_URL?: string;
 
   // KV (uncomment when needed)
   // CACHE: KVNamespace;
@@ -51,6 +53,7 @@ export interface AppEnv extends Env {
     requestId: string;
     db: Database;
     auth: Auth;
+    storage: StorageService;
     // Session data (populated by session middleware)
     user: SessionUser | null;
     session: Session | null;

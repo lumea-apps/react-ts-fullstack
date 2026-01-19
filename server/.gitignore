@@ -1,3 +1,6 @@
 
 # Wrangler temp files
 .wrangler/
+
+# Local file storage (dev)
+storage/

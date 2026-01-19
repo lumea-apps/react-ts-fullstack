@@ -31,12 +31,19 @@ BETTER_AUTH_URL = "http://localhost:3001"
 # id = "xxxxxxxx"
 
 # ============================================
-# R2 Storage (uncomment to enable)
+# R2 Storage (production)
 # ============================================
-# [[r2_buckets]]
-# binding = "STORAGE"
-# bucket_name = "my-bucket"
-# preview_bucket_name = "my-bucket-preview"
+# 1. Create R2 bucket:
+#    wrangler r2 bucket create my-app-storage
+# 2. Uncomment below and update bucket name:
+#
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "my-app-storage"
+# preview_bucket_name = "my-app-storage-preview"
+
+# Optional: Public R2 URL (if bucket is public)
+# R2_PUBLIC_URL = "https://pub-xxx.r2.dev"
 
 # ============================================
 # KV Namespace (uncomment to enable)

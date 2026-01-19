@@ -6,6 +6,7 @@ import { timing } from "hono/timing";
 
 import { loggerMiddleware } from "./middleware/logger";
 import { dbMiddleware } from "./middleware/db";
+import { storageMiddleware } from "./middleware/storage";
 import { sessionMiddleware } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
@@ -13,7 +14,7 @@ import { notFoundHandler } from "./middleware/not-found";
 import { healthRoutes } from "./routes/health";
 import { authRoutes } from "./routes/auth";
 import { itemsRoutes } from "./routes/items";
-import { uploadRoutes } from "./routes/upload";
+import { filesRoutes } from "./routes/files";
 
 import { getCorsOrigins } from "./lib/env";
 import type { AppEnv } from "./types/app";
@@ -47,13 +48,16 @@ app.use("*", dbMiddleware);
 // Access via c.get("user") and c.get("session") in any route
 // IMPORTANT: Skip for /api/auth/* routes - Better Auth manages sessions internally
 app.use("/api/items/*", sessionMiddleware);
-app.use("/api/upload/*", sessionMiddleware);
+app.use("/api/files/*", sessionMiddleware);
+
+// Storage middleware - initializes local or R2 storage based on environment
+app.use("/api/files/*", storageMiddleware);
 
 // Routes
 app.route("/health", healthRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/items", itemsRoutes);
-app.route("/api/upload", uploadRoutes);
+app.route("/api/files", filesRoutes);
 
 // Root endpoint
 app.get("/", (c) => {
@@ -64,7 +68,7 @@ app.get("/", (c) => {
       health: "/health",
       auth: "/api/auth/*",
       items: "/api/items",
-      upload: "/api/upload",
+      files: "/api/files",
     },
   });
 });

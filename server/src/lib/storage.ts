@@ -1,5 +1,5 @@
-// R2 Storage utilities
-// Uncomment Bindings.STORAGE in types/app.ts and wrangler.toml to use
+import { createLocalStorageService } from "./storage-local";
+import type { Bindings } from "../types/app";
 
 export interface UploadResult {
   key: string;
@@ -16,7 +16,27 @@ export interface StorageService {
   getSignedUrl(key: string, expiresIn?: number): string;
 }
 
-export function createStorageService(bucket: R2Bucket, publicUrl?: string): StorageService {
+/**
+ * Get storage service based on environment
+ *
+ * - Production (Workers): Uses R2 bucket
+ * - Development (Node.js): Uses local filesystem
+ */
+export function getStorageService(env: Bindings): StorageService {
+  // R2 available? Use R2
+  if (env.STORAGE) {
+    return createR2StorageService(env.STORAGE, env.R2_PUBLIC_URL);
+  }
+
+  // Fallback to local filesystem
+  const storagePath = process.env.STORAGE_PATH || "./storage";
+  return createLocalStorageService(storagePath);
+}
+
+/**
+ * Create R2 storage service (production)
+ */
+export function createR2StorageService(bucket: R2Bucket, publicUrl?: string): StorageService {
   return {
     async upload(key, data, contentType = "application/octet-stream") {
       const result = await bucket.put(key, data, {
@@ -59,13 +79,3 @@ export function createStorageService(bucket: R2Bucket, publicUrl?: string): Stor
   };
 }
 
-// Example usage in a route:
-//
-// import { createStorageService } from "../lib/storage";
-//
-// app.post("/upload", async (c) => {
-//   const storage = createStorageService(c.env.STORAGE, "https://pub-xxx.r2.dev");
-//   const file = await c.req.blob();
-//   const result = await storage.upload(`uploads/${Date.now()}`, file.stream());
-//   return c.json(result);
-// });
