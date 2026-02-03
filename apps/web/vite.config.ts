@@ -12,8 +12,8 @@ export default defineConfig({
     },
   },
   server: {
-    // Default Vite port for local development
-    port: 5173,
+    // Port 3000 for consistency with Lumea preview system
+    port: 3000,
     strictPort: false,
     // HMR configuration for Daytona proxy compatibility
     hmr: {
@@ -25,6 +25,6 @@ export default defineConfig({
     host: true,
   },
   preview: {
-    port: 5173,
+    port: 3000,
   },
 })

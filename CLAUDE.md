@@ -23,7 +23,7 @@ react-ts-fullstack/
 │       │   ├── components/ui/  # shadcn/ui components
 │       │   ├── lib/            # Utilities (api.ts, utils.ts)
 │       │   └── App.tsx         # Main app component
-│       └── vite.config.ts      # Vite config (port 5173)
+│       └── vite.config.ts      # Vite config (port 3000)
 ├── server/                  # Hono backend (Cloudflare Workers)
 │   ├── src/
 │   │   ├── db/             # Drizzle ORM schema
@@ -48,7 +48,7 @@ bun install
 bun run dev
 
 # Start individual services
-bun run dev:web      # Frontend on http://localhost:5173
+bun run dev:web      # Frontend on http://localhost:3000
 bun run dev:server   # Backend on http://localhost:3001 (Node.js)
 
 # Alternative: Wrangler dev (local Workers runtime - may not work in sandbox)
@@ -77,7 +77,7 @@ bun run lint
 
 | Service | Port | URL |
 |---------|------|-----|
-| Frontend (Vite) | 5173 | http://localhost:5173 |
+| Frontend (Vite) | 3000 | http://localhost:3000 |
 | Backend (Node.js) | 3001 | http://localhost:3001 |
 | PostgreSQL | 5432 | postgresql://lumea@localhost:5432/lumea |
 
@@ -335,7 +335,7 @@ Pre-configured bindings (uncomment in `wrangler.toml` to enable):
 
 ## Notes
 
-- Frontend uses default Vite port 5173 for local development
+- Frontend uses port 3000 for local development (aligned with Lumea preview system)
 - Backend uses Node.js + `@hono/node-server` for local development (identical Hono code)
 - `concurrently` runs both services with `bun run dev`
 - All components from shadcn/ui are pre-installed

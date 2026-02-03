@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run dev:node",
-    "dev:node": "DATABASE_URL=\"postgresql://lumea:lumea@localhost:5432/lumea\" PORT=3001 NODE_ENV=development CORS_ORIGINS=\"http://localhost:3000,http://localhost:5173\" LOG_LEVEL=info BETTER_AUTH_URL=\"http://localhost:3001\" BETTER_AUTH_SECRET=\"dev-secret-change-in-production\" bun --watch src/server-node.ts",
+    "dev": "bun --watch src/server-node.ts",
     "dev:wrangler": "npx wrangler dev",
     "build": "npx wrangler deploy --dry-run --outdir dist",
     "deploy": "npx wrangler deploy",
@@ -17,10 +16,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun scripts/seed.ts",
-    "db:setup": "bun scripts/setup.ts",
-    "test:auth": "DATABASE_URL=\"postgresql://lumea:lumea@localhost:5432/lumea\" API_URL=\"http://localhost:3001\" bun scripts/test-auth.ts"
+    "db:setup": "bun scripts/setup.ts"
   },
   "dependencies": {
+    "@better-auth/expo": "^1.4.15",
     "@hono/node-server": "^1.13.8",
     "@hono/zod-validator": "^0.5.0",
     "better-auth": "^1.4.14",
